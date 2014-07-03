@@ -49,6 +49,7 @@ def get_issues(label='',mode)
     raise StandardError "mode has an unsupported value: #{mode}. should be 'inclusive' or 'exclusive'"
   end
   jira_issues = Hash.new
+  j_issue = Hash.new
   # This is the REST URL that will be hit.  Change the jql query if you want to adjust the query used here
  # uri = URI.parse(JIRA_BASE_URL + "/rest/api/2/search?jql=assignee+%3D+currentUser()+AND+status+not+in+(Closed,+Resolved)+AND+labels+in(#{label})")
 
@@ -62,6 +63,10 @@ def get_issues(label='',mode)
         data = JSON.parse(response.body)
         data["issues"].each do |item|
           jira_id = item["key"]
+          j_id = item['key']
+          j_issue[j_id] = Hash.new
+          j_issue[j_id]['status']  = item['fields']['status']['name']
+          j_issue[j_id]['summary'] = item['fields']['summary']
 #          p item
 #          p "-----------------------------------------"
 #          binding.pry;
@@ -78,13 +83,14 @@ def get_issues(label='',mode)
      raise StandardError, "Unsuccessful response code " + response.code + " for #{label} "
     end
   end
-  return jira_issues
+  #return jira_issues
+  return j_issue
 end
 
 
 
 # This method adds a new Task to OmniFocus based on the new_task_properties passed in
-def add_task(omnifocus_document, new_task_properties)
+def add_task(omnifocus_document, new_task_properties, task_ext_ticket_key)
   # If there is a passed in OF project name, get the actual project object
   if new_task_properties['project']
     proj_name = new_task_properties["project"]
@@ -98,13 +104,21 @@ def add_task(omnifocus_document, new_task_properties)
 
 
 
-
+  # TODO: change this to match off the jira id as a regex, not ==, this permits the subject to change
+  #
   # Check to see if there's already an OF Task with that name in the referenced Project
   # If there is, just stop.
   name   = new_task_properties["name"]
-  #binding.pry;
-  exists = proj.tasks.get.find { |t| t.name.get == name }
-  return false if exists
+  # binding.pry;
+  exists = proj.tasks.get.find { |entry|  entry.name.get  == name}
+  #I tried several means of trying to get this to be a match, alas, I couldn't get it to work easily.
+  # problem for future me.
+  # /task_ext_ticket_key/ }#entry.name.get =~ /task_ext_ticket_key/ }
+  #tasks.get.find.match(task_ext_ticket_key)# { |t|} # t.name == /task_ext_ticket_key/ }
+  if exists
+    return false
+  end
+  #  return false if exists
 
   # If there is a passed in OF context name, get the actual context object
   if new_task_properties['context']
@@ -153,13 +167,15 @@ def add_jira_tickets_to_omnifocus ()
     omnifocus_document = omnifocus_app.default_document
 
     # Iterate through resulting issues.
-    results.each do |jira_id, summary|
+    results.each do |jira_id, hash|
       #binding.pry;
-      # Create the task name by adding the ticket summary to the jira ticket key
-      task_name = "#{jira_id}: #{summary}"
+      jira_summary = hash['summary']
+      jira_status  = hash['status']
+      # Create the task name by adding the ticket hash to the jira ticket key
+      task_name = "#{jira_id}: #{jira_summary}"
       # Create the task notes with the Jira Ticket URL
       #status = foo
-      task_notes = "#{JIRA_BASE_URL}/browse/#{jira_id}"
+      task_notes  = "ID: #{jira_id}\r\nURL: #{JIRA_BASE_URL}/browse/#{jira_id} \r\nStatus: #{jira_status} "
 
       # Build properties for the Task
       @props = {}
@@ -168,7 +184,7 @@ def add_jira_tickets_to_omnifocus ()
       @props['context'] = DEFAULT_CONTEXT
       @props['note'] = task_notes
       @props['flagged'] = FLAGGED
-      add_task(omnifocus_document, @props)
+      add_task(omnifocus_document, @props, jira_id)
     end
   end#end iteration
   #get the list of tickets which are assigned to the user, but not caught by the existing label search
@@ -184,21 +200,23 @@ def add_jira_tickets_to_omnifocus ()
   omnifocus_app = Appscript.app.by_name("OmniFocus")
   omnifocus_document = omnifocus_app.default_document
   # Iterate through resulting issues.
-  exclusive_results.each do |jira_id, summary|
+  exclusive_results.each do |jira_id, hash|
     #binding.pry;
-    # Create the task name by adding the ticket summary to the jira ticket key
-    task_name = "#{jira_id}: #{summary}"
+    jira_summary = hash['summary']
+    jira_status  = hash['status']
+    # Create the task name by adding the ticket hash to the jira ticket key
+    task_name = "#{jira_id}: #{jira_summary}"
     # Create the task notes with the Jira Ticket URL
     #status = foo
-    task_notes = "#{JIRA_BASE_URL}/browse/#{jira_id}"
-    # Build properties for the Task
-    @props = {}
-    @props['name'] = task_name
-    @props['project'] = DEFAULT_PROJECT
+    task_notes  = "ID: #{jira_id}\r\nURL: #{JIRA_BASE_URL}/browse/#{jira_id} \r\nStatus: #{jira_status} "
+   # Build properties for the Task
+    @props            = {}
     @props['context'] = DEFAULT_CONTEXT
-    @props['note'] = task_notes
     @props['flagged'] = FLAGGED
-    add_task(omnifocus_document, @props)
+    @props['name']    = task_name
+    @props['note']    = task_notes
+    @props['project'] = DEFAULT_PROJECT
+    add_task(omnifocus_document, @props, jira_id )
   end
 end
 
@@ -215,27 +233,38 @@ def mark_resolved_jira_tickets_as_complete_in_omnifocus ()
      # p task.note.get
     else
       #I think we should add logic here to see the task is completed already.
-      full_url= task.note.get
-      jira_id=full_url.sub(JIRA_BASE_URL+"/browse/","")
-      if task.completed.get == false
-      # try to parse out jira id
+      full_url=task.note.get
+      jira_id_foo=full_url.scan(/ID: ([[:upper:]]*-[[:digit:]]*)/)
+      if jira_id_foo.is_a?(Array)
+       # p "Array!"
+        jira_id = jira_id_foo[0][0]
+       # binding.pry;
+      else
+        jira_id = jira_id_foo
+      end
+      #ßfull_url.scan(/URL: ([[:upper:]]*-[[:digit:]]*)/)
+      #binding.pry;
+#      jira_id=full_url.sub(JIRA_BASE_URL+"/browse/","").
+      #   binding.pry;
+      tstate=task.completed.get
+      if tstate == false
+        # try to parse out jira id
         # check status of the jira
-        tstate=task.completed.get
-        p " curling for #{jira_id} - Completed: #{tstate}"
+        # p " curling for #{jira_id} - Completed: #{tstate}"
         uri = URI.parse(JIRA_BASE_URL + '/rest/api/2/issue/' + jira_id)
-       # p uri
+        # p uri
         Net::HTTP.start(uri.hostname, uri.port, :use_ssl => uri.scheme == 'https') do |http|
           request = Net::HTTP::Get.new(uri.request_uri)
           request.basic_auth("#{USERNAME}", "#{PASSWORD}")
           response = http.request(request)
 
           if response.code =~ /20[0-9]{1}/
-              data = JSON.parse(response.body)
-              resolution = data["fields"]["resolution"]
-              if resolution != nil
-                # if resolved, mark it as complete in OmniFocus
-                task.completed.set(true)
-              end
+            data = JSON.parse(response.body)
+            resolution = data["fields"]["resolution"]
+            if resolution != nil
+              # if resolved, mark it as complete in OmniFocus
+              task.completed.set(true)
+            end
           else
            raise StandardError, "Unsuccessful response code " + response.code + " for issue " + issue
           end
