@@ -1,0 +1,21 @@
+#######
+#Default Settings
+#######
+#  Do not put sensitive data here.  Sensitive data should live in
+#  conf.d/script_override.yaml. That is added to .gitignore, so it will
+#  never be added accidentially.
+#
+# Jira Keys:
+################################################################################
+jira_baseurl:  'https://jira.mysite.com'
+jira_username: 'myuser'
+jira_password: 'mypass'
+################################################################################
+# OmniFocus Keys:
+omnifocus_default_context: 'work'
+omnifocus_default_project: 'unsorted_work'
+omnifocus_flagged:         true
+omnifocus_projects:        []
+################################################################################
+# Script Config:
+script_debug: '0'
