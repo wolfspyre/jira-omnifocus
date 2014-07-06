@@ -1,0 +1,12 @@
+#!/bin/bash
+LOCALUSER=`whoami`
+export PATH="/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547/bin:/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547@global/bin:/Users/${LOCALUSER}/.rvm/rubies/ruby-1.9.3-p547/bin:$PATH"
+export GEM_HOME='/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547'
+export GEM_PATH='/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547:/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547@global'
+export MY_RUBY_HOME='/Users/${LOCALUSER}/.rvm/rubies/ruby-1.9.3-p547'
+export IRBRC='/Users/${LOCALUSER}/.rvm/rubies/ruby-1.9.3-p547/.irbrc'
+export MY_RUBY_HOME='/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547@jira-omnifocus/bin:/Users/${LOCALUSER}/.rvm/gems/ruby-1.9.3-p547@global/bin:/Users/${LOCALUSER}/.rvm/rubies/ruby-1.9.3-p547/bin:$PATH'
+export SHELL='/bin/bash'
+unset MAGLEV_HOME
+unset RBXOPT
+/Users/${LOCALUSER}/.rvm/bin/rvm in "/Users/${LOCALUSER}/git/jira-omnifocus" do "rake" "run"
