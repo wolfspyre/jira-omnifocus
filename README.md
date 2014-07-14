@@ -3,28 +3,43 @@ jira-omnifocus
 
 Ruby script to create and manage OmniFocus tasks based on your Jira tickets
 
-
+This script started as:
 http://www.digitalsanctuary.com/tech-blog/general/jira-to-omnifocus-integration.html
 
-What it does is two things:
+I've modified it a bit.
 
-It pulls back all unresolved Jira tickets that are assigned to you and if it hasn't already created a OmniFocus task for that ticket, it creates a new one.  The title of the task is the Jira ticket number followed by the summary from the ticket.  The note part of the OmniFocus task is just the URL to the Jira ticket so you can easily go right to it.  I chose not to pull over the full description, or comment history into the task notes as it? usually more than I want to see in OmniFocus.
+###What it does:
 
-It also checks all the OmniFocus tasks that look like they are related to Jira tickets, and checks to see if the matching ticket has been resolved.  If so, it marks the task as complete.
+First it runs through all the unresolved Jira tickets that are assigned to you.
+If it finds a ticket in jira that it hasn't already created an OmniFocus task for, it creates a new one.
 
-Very simple.  The Ruby code is straight forward and it should be easy to modify to do other things to meet your specific needs.
+The title of the task is the Jira ticket number followed by the summary from the ticket.  The note part of the OmniFocus task is the URL to the Jira ticket, and the current status.  I chose not to pull over the full description, or comment history into the task notes as it is usually more than I want to see in OmniFocus.
 
-You will need to install a few gems
+It subsequently checks all tasks in OmniFocus that look like they are related to Jira tickets, and checks to see if the matching ticket has been resolved.  If so, it marks the task as complete.
 
-gem install rb-appscript json
-You?l need to edit the configuration values at the top of the script (please note this current version does not hide/encrypt your password), and then save it somewhere.  I have mine in /Users/devon/bin/ but you can put it anywhere.  Then you can add a cron entry to run it every 5 minutes or 10 minutes or whatever you need (it will take a minute or so to run so don? make it run too often).
 
-You can use crontab -e to edit your user crontab and create an entry like this:
+Very simple.  The Ruby code is pretty simple, and it should be easy to modify to do other things to meet your specific needs.
 
-*/10 * * * * /Users/devon/bin/jiraomnifocus.rb
-That should be it!  If it doesn? work, try adding some puts debug statements and running it manually.  I can? offer any support, as I don? know Ruby that well and just magically cobbled this together:)
+###Usage:
 
-TODO:
+  * You will need to install a few gems.
+    * This can be tackled by running `bundle install`
+    * Or by looking at the `Gemfile` and adding the required gems ala: `gem install rb-appscript json`
+
+  * You will need to copy conf.d/script_config.yaml to conf.d/script_override.yaml.
+
+  Place your specific configuration needs there. **Please note this version does not hide/encrypt your password**.
+  * Update `bin/ENV_Settings.sh.example` with your relevant environment variables.
+
+  * I setup mine to run via cron. This is my crontab entry:
+    */5 * * * * /bin/bash ~/git/jira-omnifocus/bin/ENV_settings.sh >/dev/null 2>&1
+
+
+That should be it!  If it doesn't work, try using pry to debug while running it manually.
+
+I will try to offer support, but I don't know Ruby too terribly well, and it's hard to poke into the applescript bridge.
+
+###TODO:
   * add means to create the project if it doesn't exist
   * add means to get all tickets assigned to me which don't have labels (ie 'the rest of my tickets')
   * add means to get other project labels
