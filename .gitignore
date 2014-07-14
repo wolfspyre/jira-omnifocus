@@ -1,2 +1,3 @@
 conf.d/script_override.yaml
+Gemfile.lock
 bin/ENV_Settings.sh
