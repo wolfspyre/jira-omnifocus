@@ -249,7 +249,7 @@ def mark_resolved_jira_tickets_as_complete_in_omnifocus ()
   ctx.get.each do |task|
     debug_msg("mark_resolved_jira_tickets_as_complete_in_omnifocus: #{task}",4)
    # p task
-    if !task.note.get.match(JIRA_BASE_URL)
+    if ( !task.note.get.match(JIRA_BASE_URL) or !task.note.get.match(/ID: ([[:upper:]]*-[[:digit:]]*)/) )
      # p 'task.note.get.match failed for '#ß task
      # p task.note.get
     else
