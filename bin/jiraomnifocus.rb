@@ -1,4 +1,4 @@
-#!/Users/wnoble/.rvm/rubies/ruby-1.9.3-p547/bin/ruby
+#!/Users/wnoble/.rvm/rubies/ruby-1.9.3-p551/bin/ruby
 require 'appscript'
 require 'rubygems'
 require 'net/http'
